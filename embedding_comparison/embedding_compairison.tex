@@ -1,0 +1,345 @@
+% This LaTeX was auto-generated from MATLAB code.
+% To make changes, update the MATLAB code and export to LaTeX again.
+
+\documentclass{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{graphicx}
+\usepackage{color}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{epstopdf}
+\usepackage[table]{xcolor}
+\usepackage{matlab}
+
+\sloppy
+\epstopdfsetup{outdir=./}
+\graphicspath{ {./embedding_compairison_images/} }
+
+\begin{document}
+
+\matlabtitle{BERTによる埋め込み表現の取得とその比較}
+
+\begin{par}
+\begin{flushleft}
+BERTは、単語の埋め込み表現に文脈を加味する。それを確かめるために、以下のスクリプトを動作させる。
+\end{flushleft}
+\end{par}
+
+\begin{matlabcode}
+clear;
+mdl = bert;
+tokenizer = mdl.Tokenizer
+\end{matlabcode}
+\begin{matlaboutput}
+tokenizer = 
+  BERTTokenizer のプロパティ:
+
+      PaddingToken: "[PAD]"
+        StartToken: "[CLS]"
+    SeparatorToken: "[SEP]"
+         MaskToken: "[MASK]"
+     FullTokenizer: [1x1 bert.tokenizer.internal.FullTokenizer]
+       PaddingCode: 1
+     SeparatorCode: 103
+         StartCode: 102
+          MaskCode: 104
+
+\end{matlaboutput}
+
+\begin{par}
+\begin{flushleft}
+同じ"take"を使っているが、前後の語順(=context)が異なる文章を用意する。
+\end{flushleft}
+\end{par}
+
+\begin{matlabcode}
+str1 = "I'll take this hat."; idx1 = 5;
+str2 = "I'll take his hat."; idx2 = 5;
+str3 = "You'll take this hat."; idx3 = 5;
+\end{matlabcode}
+
+\begin{par}
+\begin{flushleft}
+各文字列に対してトークン化(単語の最小単位に分割)を行う。トークン化された文字列をtable1として表示する。比較のため、今回はトークン長と"take"の位置が同じ文章を用意した。いずれの文も、トークン長は9、"take"の位置はトークンの5番目にある。
+\end{flushleft}
+\end{par}
+
+\begin{matlabcode}
+tokens1 = tokenize(tokenizer, str1);
+tokens2 = tokenize(tokenizer, str2);
+tokens3 = tokenize(tokenizer, str3);
+tbl1 = table;
+tbl1.tokens1 = tokens1{1}';
+tbl1.tokens2 = tokens2{1}';
+tbl1.tokens3 = tokens3{1}'
+\end{matlabcode}
+\begin{matlabtableoutput}
+{
+\begin{tabular} {|c|c|c|c|}\hline
+\mlcell{ } & \mlcell{tokens1} & \mlcell{tokens2} & \mlcell{tokens3} \\ \hline
+\mlcell{1} & \mlcell{"[CLS]"} & \mlcell{"[CLS]"} & \mlcell{"[CLS]"} \\ \hline
+\mlcell{2} & \mlcell{"i"} & \mlcell{"i"} & \mlcell{"you"} \\ \hline
+\mlcell{3} & \mlcell{"'"} & \mlcell{"'"} & \mlcell{"'"} \\ \hline
+\mlcell{4} & \mlcell{"ll"} & \mlcell{"ll"} & \mlcell{"ll"} \\ \hline
+\mlcell{5} & \mlcell{"take"} & \mlcell{"take"} & \mlcell{"take"} \\ \hline
+\mlcell{6} & \mlcell{"this"} & \mlcell{"his"} & \mlcell{"this"} \\ \hline
+\mlcell{7} & \mlcell{"hat"} & \mlcell{"hat"} & \mlcell{"hat"} \\ \hline
+\mlcell{8} & \mlcell{"."} & \mlcell{"."} & \mlcell{"."} \\ \hline
+\mlcell{9} & \mlcell{"[SEP]"} & \mlcell{"[SEP]"} & \mlcell{"[SEP]"} \\ 
+\hline
+\end{tabular}
+}
+\end{matlabtableoutput}
+
+\begin{par}
+\begin{flushleft}
+トークン化された文字列をエンコードする。エンコードすると内部表現になるため、人の目では元の文章は分からない。エンコードは単語を常にある1つの表現に変換するだけなので、この時点では文脈の加味はできていない。エンコード結果はtable2に示す。
+\end{flushleft}
+\end{par}
+
+\begin{matlabcode}
+X1 = encodeTokens(tokenizer, tokens1);
+X2 = encodeTokens(tokenizer, tokens2);
+X3 = encodeTokens(tokenizer, tokens3);
+tbl2 = table;
+tbl2.X1 = X1{1}';
+tbl2.X2 = X2{1}';
+tbl2.X3 = X3{1}'
+\end{matlabcode}
+\begin{matlabtableoutput}
+{
+\begin{tabular} {|c|c|c|c|}\hline
+\mlcell{ } & \mlcell{X1} & \mlcell{X2} & \mlcell{X3} \\ \hline
+\mlcell{1} & \mlcell{102} & \mlcell{102} & \mlcell{102} \\ \hline
+\mlcell{2} & \mlcell{1046} & \mlcell{1046} & \mlcell{2018} \\ \hline
+\mlcell{3} & \mlcell{1006} & \mlcell{1006} & \mlcell{1006} \\ \hline
+\mlcell{4} & \mlcell{2223} & \mlcell{2223} & \mlcell{2223} \\ \hline
+\mlcell{5} & \mlcell{2203} & \mlcell{2203} & \mlcell{2203} \\ \hline
+\mlcell{6} & \mlcell{2024} & \mlcell{2011} & \mlcell{2024} \\ \hline
+\mlcell{7} & \mlcell{6046} & \mlcell{6046} & \mlcell{6046} \\ \hline
+\mlcell{8} & \mlcell{1013} & \mlcell{1013} & \mlcell{1013} \\ \hline
+\mlcell{9} & \mlcell{103} & \mlcell{103} & \mlcell{103} \\ 
+\hline
+\end{tabular}
+}
+\end{matlabtableoutput}
+
+\begin{par}
+\begin{flushleft}
+実際に埋め込み表現を計算してみる。ハイパーパラメーターは読み込んだBERTモデルに依存する。得られる埋め込み表現は、768×トークン長の大きな行列になっているため、今回比較する"take"の埋め込み表現だけ取り出す。隠れ層の大きさが768次元なので、1単語に対応する埋め込み表現(ベクトル)は768次元になる。
+\end{flushleft}
+\end{par}
+
+\begin{matlabcode}
+Z1 = bert.model(X1{1}, mdl.Parameters);
+Z2 = bert.model(X2{1}, mdl.Parameters);
+Z3 = bert.model(X3{1}, mdl.Parameters);
+embedded_rep1 = Z1(:, idx1);
+embedded_rep2 = Z2(:, idx2);
+embedded_rep3 = Z3(:, idx3);
+tbl3 = table;
+vecsize = mdl.Parameters.Hyperparameters.HiddenSize;
+dst = zeros(vecsize, 1);
+for i = 1:vecsize
+    dst(i, 1) = embedded_rep1(i);
+end
+tbl3.emb1 = dst;
+for i = 1:vecsize
+    dst(i, 1) = embedded_rep2(i);
+end
+tbl3.emb2 = dst;
+for i = 1:vecsize
+    dst(i, 1) = embedded_rep3(i);
+end
+tbl3.emb3 = dst
+\end{matlabcode}
+\begin{matlabtableoutput}
+{
+\begin{tabular} {|c|c|c|c|}\hline
+\mlcell{ } & \mlcell{emb1} & \mlcell{emb2} & \mlcell{emb3} \\ \hline
+\mlcell{1} & \mlcell{-0.1160} & \mlcell{0.1420} & \mlcell{-0.2301} \\ \hline
+\mlcell{2} & \mlcell{-0.5469} & \mlcell{-0.1859} & \mlcell{-0.8412} \\ \hline
+\mlcell{3} & \mlcell{0.7155} & \mlcell{0.6250} & \mlcell{0.5879} \\ \hline
+\mlcell{4} & \mlcell{-0.0024} & \mlcell{-0.1845} & \mlcell{-0.0481} \\ \hline
+\mlcell{5} & \mlcell{0.2441} & \mlcell{0.3195} & \mlcell{0.3978} \\ \hline
+\mlcell{6} & \mlcell{-0.6797} & \mlcell{-0.7001} & \mlcell{-0.5732} \\ \hline
+\mlcell{7} & \mlcell{-0.2673} & \mlcell{-0.4987} & \mlcell{0.1486} \\ \hline
+\mlcell{8} & \mlcell{0.1308} & \mlcell{-0.3692} & \mlcell{0.5735} \\ \hline
+\mlcell{9} & \mlcell{0.4827} & \mlcell{0.5720} & \mlcell{0.2369} \\ \hline
+\mlcell{10} & \mlcell{0.0918} & \mlcell{0.0708} & \mlcell{-0.0184} \\ \hline
+\mlcell{11} & \mlcell{0.5462} & \mlcell{0.2886} & \mlcell{0.3373} \\ \hline
+\mlcell{12} & \mlcell{0.1403} & \mlcell{0.0833} & \mlcell{0.2659} \\ \hline
+\mlcell{13} & \mlcell{-0.4233} & \mlcell{-0.5158} & \mlcell{-0.4411} \\ \hline
+\mlcell{14} & \mlcell{-0.5533} & \mlcell{-0.5662} & \mlcell{-0.4837} \\ \hline
+\mlcell{15} & \mlcell{-0.4752} & \mlcell{-0.4694} & \mlcell{-0.4900} \\ \hline
+\mlcell{16} & \mlcell{0.6926} & \mlcell{0.5454} & \mlcell{0.4593} \\ \hline
+\mlcell{17} & \mlcell{0.3741} & \mlcell{0.5433} & \mlcell{0.3830} \\ \hline
+\mlcell{18} & \mlcell{0.1322} & \mlcell{0.0968} & \mlcell{-0.1177} \\ \hline
+\mlcell{19} & \mlcell{0.2054} & \mlcell{-0.1236} & \mlcell{-0.1227} \\ \hline
+\mlcell{20} & \mlcell{0.4845} & \mlcell{0.1349} & \mlcell{1.0921} \\ \hline
+\mlcell{21} & \mlcell{0.7027} & \mlcell{0.5009} & \mlcell{0.5607} \\ \hline
+\mlcell{22} & \mlcell{-0.0106} & \mlcell{-0.2001} & \mlcell{0.0774} \\ \hline
+\mlcell{23} & \mlcell{-0.0566} & \mlcell{0.0932} & \mlcell{-0.1098} \\ \hline
+\mlcell{24} & \mlcell{0.4205} & \mlcell{0.5578} & \mlcell{0.2222} \\ \hline
+\mlcell{25} & \mlcell{0.5377} & \mlcell{0.2414} & \mlcell{0.2844} \\ \hline
+\mlcell{26} & \mlcell{-0.5064} & \mlcell{-0.2215} & \mlcell{-0.4148} \\ \hline
+\mlcell{27} & \mlcell{0.4623} & \mlcell{0.6067} & \mlcell{0.3140} \\ \hline
+\mlcell{28} & \mlcell{0.2571} & \mlcell{0.3437} & \mlcell{-0.0564} \\ \hline
+\mlcell{29} & \mlcell{-0.1916} & \mlcell{-0.3980} & \mlcell{-0.0561} \\ \hline
+\mlcell{30} & \mlcell{0.0766} & \mlcell{0.3233} & \mlcell{0.1363} \\ \hline
+\mlcell{31} & \mlcell{-0.3314} & \mlcell{-0.3427} & \mlcell{-0.4022} \\ \hline
+\mlcell{32} & \mlcell{0.3735} & \mlcell{0.4216} & \mlcell{-0.2411} \\ \hline
+\mlcell{33} & \mlcell{-0.0156} & \mlcell{-0.2184} & \mlcell{-0.0657} \\ \hline
+\mlcell{34} & \mlcell{-0.0277} & \mlcell{-0.0733} & \mlcell{-0.0424} \\ \hline
+\mlcell{35} & \mlcell{-0.2632} & \mlcell{-0.6201} & \mlcell{-0.4810} \\ \hline
+\mlcell{36} & \mlcell{-0.0222} & \mlcell{0.1593} & \mlcell{-0.0392} \\ \hline
+\mlcell{37} & \mlcell{0.4453} & \mlcell{0.7058} & \mlcell{0.2936} \\ \hline
+\mlcell{38} & \mlcell{-0.4483} & \mlcell{-0.2189} & \mlcell{-0.3043} \\ \hline
+\mlcell{39} & \mlcell{-0.0245} & \mlcell{-0.1574} & \mlcell{-0.3625} \\ \hline
+\mlcell{40} & \mlcell{-0.0616} & \mlcell{-0.0960} & \mlcell{-0.4212} \\ \hline
+\mlcell{41} & \mlcell{-0.3027} & \mlcell{-0.0029} & \mlcell{-0.4974} \\ \hline
+\mlcell{42} & \mlcell{0.0075} & \mlcell{-0.0566} & \mlcell{0.2101} \\ \hline
+\mlcell{43} & \mlcell{-0.6792} & \mlcell{-0.6238} & \mlcell{-0.9634} \\ \hline
+\mlcell{44} & \mlcell{-0.7694} & \mlcell{-0.5929} & \mlcell{-0.5542} \\ \hline
+\mlcell{45} & \mlcell{0.0752} & \mlcell{-0.2257} & \mlcell{0.2400} \\ \hline
+\mlcell{46} & \mlcell{0.4369} & \mlcell{0.4265} & \mlcell{0.0556} \\ \hline
+\mlcell{47} & \mlcell{0.7123} & \mlcell{0.7414} & \mlcell{0.9656} \\ \hline
+\mlcell{48} & \mlcell{0.5993} & \mlcell{0.3063} & \mlcell{1.1079} \\ \hline
+\mlcell{49} & \mlcell{0.0869} & \mlcell{0.0183} & \mlcell{-0.0664} \\ \hline
+\mlcell{50} & \mlcell{-0.3983} & \mlcell{-0.2229} & \mlcell{-0.5939} \\ \hline
+\mlcell{51} & \mlcell{-0.3314} & \mlcell{-0.4023} & \mlcell{-0.3567} \\ \hline
+\mlcell{52} & \mlcell{0.5201} & \mlcell{0.6086} & \mlcell{-0.0665} \\ \hline
+\mlcell{53} & \mlcell{-0.5761} & \mlcell{-0.6789} & \mlcell{-0.2615} \\ \hline
+\mlcell{54} & \mlcell{-0.1725} & \mlcell{-0.1529} & \mlcell{-0.5247} \\ \hline
+\mlcell{55} & \mlcell{0.3490} & \mlcell{0.0929} & \mlcell{0.1279} \\ \hline
+\mlcell{56} & \mlcell{0.5431} & \mlcell{0.3459} & \mlcell{0.1956} \\ \hline
+\mlcell{57} & \mlcell{-0.0139} & \mlcell{-0.0246} & \mlcell{-0.3368} \\ \hline
+\mlcell{58} & \mlcell{-0.0119} & \mlcell{-0.2614} & \mlcell{0.1824} \\ \hline
+\mlcell{59} & \mlcell{-0.6355} & \mlcell{-0.9257} & \mlcell{-0.6177} \\ \hline
+\mlcell{60} & \mlcell{-0.1591} & \mlcell{-0.0389} & \mlcell{-0.1785} \\ \hline
+\mlcell{61} & \mlcell{-0.5418} & \mlcell{-0.6064} & \mlcell{-0.6243} \\ \hline
+\mlcell{62} & \mlcell{0.2161} & \mlcell{0.0596} & \mlcell{0.5444} \\ \hline
+\mlcell{63} & \mlcell{0.8353} & \mlcell{0.4724} & \mlcell{0.5457} \\ \hline
+\mlcell{64} & \mlcell{-0.0032} & \mlcell{0.2853} & \mlcell{-0.2740} \\ \hline
+\mlcell{65} & \mlcell{-0.1003} & \mlcell{0.2508} & \mlcell{-0.2484} \\ \hline
+\mlcell{66} & \mlcell{-0.6828} & \mlcell{-0.3668} & \mlcell{0.0149} \\ \hline
+\mlcell{67} & \mlcell{-0.1491} & \mlcell{-0.3366} & \mlcell{0.0795} \\ \hline
+\mlcell{68} & \mlcell{0.2061} & \mlcell{0.6047} & \mlcell{0.5751} \\ \hline
+\mlcell{69} & \mlcell{-1.1630} & \mlcell{-1.0778} & \mlcell{-1.3783} \\ \hline
+\mlcell{70} & \mlcell{-0.2554} & \mlcell{-0.2456} & \mlcell{-0.2091} \\ \hline
+\mlcell{71} & \mlcell{-0.5475} & \mlcell{-0.3192} & \mlcell{-0.9647} \\ \hline
+\mlcell{72} & \mlcell{-0.1610} & \mlcell{0.0110} & \mlcell{-0.0505} \\ \hline
+\mlcell{73} & \mlcell{0.3951} & \mlcell{0.0154} & \mlcell{0.4890} \\ \hline
+\mlcell{74} & \mlcell{-0.2931} & \mlcell{-0.2328} & \mlcell{-0.3463} \\ \hline
+\mlcell{75} & \mlcell{0.1003} & \mlcell{-0.0036} & \mlcell{0.0140} \\ \hline
+\mlcell{76} & \mlcell{0.4610} & \mlcell{0.4257} & \mlcell{-0.4177} \\ \hline
+\mlcell{77} & \mlcell{-0.5896} & \mlcell{-0.5215} & \mlcell{-0.2750} \\ \hline
+\mlcell{78} & \mlcell{0.8148} & \mlcell{0.5854} & \mlcell{0.3216} \\ \hline
+\mlcell{79} & \mlcell{-0.4205} & \mlcell{-0.4183} & \mlcell{-0.0509} \\ \hline
+\mlcell{80} & \mlcell{-0.0234} & \mlcell{0.2565} & \mlcell{-0.1752} \\ \hline
+\mlcell{81} & \mlcell{-0.5442} & \mlcell{-0.5211} & \mlcell{-0.3634} \\ \hline
+\mlcell{82} & \mlcell{0.5494} & \mlcell{0.6955} & \mlcell{0.4104} \\ \hline
+\mlcell{83} & \mlcell{-0.0128} & \mlcell{0.1221} & \mlcell{-0.0773} \\ \hline
+\mlcell{84} & \mlcell{0.3782} & \mlcell{0.3158} & \mlcell{0.5504} \\ \hline
+\mlcell{85} & \mlcell{-0.7095} & \mlcell{-0.8767} & \mlcell{-0.4440} \\ \hline
+\mlcell{86} & \mlcell{-0.2692} & \mlcell{-0.3690} & \mlcell{-0.2193} \\ \hline
+\mlcell{87} & \mlcell{-1.2473} & \mlcell{-1.2879} & \mlcell{-1.4107} \\ \hline
+\mlcell{88} & \mlcell{-0.0309} & \mlcell{-0.1643} & \mlcell{-0.0545} \\ \hline
+\mlcell{89} & \mlcell{-0.7476} & \mlcell{-0.7889} & \mlcell{-0.6659} \\ \hline
+\mlcell{90} & \mlcell{1.3427} & \mlcell{1.2746} & \mlcell{1.4835} \\ \hline
+\mlcell{91} & \mlcell{-0.1078} & \mlcell{-0.1315} & \mlcell{-0.0509} \\ \hline
+\mlcell{92} & \mlcell{0.1210} & \mlcell{0.0976} & \mlcell{-0.2434} \\ \hline
+\mlcell{93} & \mlcell{-0.9557} & \mlcell{-1.0646} & \mlcell{-1.5740} \\ \hline
+\mlcell{94} & \mlcell{0.3601} & \mlcell{0.2806} & \mlcell{0.0033} \\ \hline
+\mlcell{95} & \mlcell{0.4773} & \mlcell{0.5201} & \mlcell{0.0672} \\ \hline
+\mlcell{96} & \mlcell{0.2847} & \mlcell{0.8118} & \mlcell{0.1702} \\ \hline
+\mlcell{97} & \mlcell{0.6659} & \mlcell{0.9744} & \mlcell{0.8089} \\ \hline
+\mlcell{98} & \mlcell{-0.0140} & \mlcell{0.0088} & \mlcell{0.5126} \\ \hline
+\mlcell{99} & \mlcell{-0.4452} & \mlcell{-0.5561} & \mlcell{-0.3076} \\ \hline
+\mlcell{100} & \mlcell{-0.0449} & \mlcell{0.1902} & \mlcell{-0.1654} \\ 
+\hline
+\end{tabular}
+}
+\end{matlabtableoutput}
+
+\begin{par}
+\begin{flushleft}
+同じ単語に対して、文脈によって異なる埋め込み表現が得られたのか確かめるために、散布図にしてみる。そのためにも、まずは得られた埋め込み表現を簡単に扱うことができるデータ型に変換する。今回は得られた埋め込み表現を、全て2次元配列に格納し直す。
+\end{flushleft}
+\end{par}
+
+\begin{matlabcode}
+len = length(tokens1{1});
+mat1 = zeros(vecsize, len);
+for i = 1:vecsize
+    for j = 1:len
+        mat1(i, j) = Z1(i, j);
+    end
+end
+len = length(tokens2{1});
+mat2 = zeros(vecsize, len);
+for i = 1:vecsize
+    for j = 1:len
+        mat2(i, j) = Z2(i, j);
+    end
+end
+len = length(tokens3{1});
+mat3 = zeros(vecsize, len);
+for i = 1:vecsize
+    for j = 1:len
+        mat3(i, j) = Z3(i, j);
+    end
+end
+\end{matlabcode}
+
+\begin{par}
+\begin{flushleft}
+そこから、もう一度"take"の単語に相当する部分のみをveci (i=1～3)に格納する。実際に散布図にして比較した画像を出力する。もし、比較しているベクトル同士が全く同じであれば、散布図は右下のプロットのように一直線になるはずだが、いずれの比較散布図も、その通りではない。つまり、文脈によって異なる埋め込み表現を得ることができた。
+\end{flushleft}
+\end{par}
+
+\begin{matlabcode}
+vec1 = mat1(:, idx1);
+vec2 = mat2(:, idx2);
+vec3 = mat3(:, idx3);
+
+subplot(2, 2, 1);
+scatter(vec1, vec2);
+title("vec1 - vec2", "FontSize", 16);
+xlabel("vec1", "FontSize", 13);
+ylabel("vec2", "FontSize", 13);
+grid on;
+
+subplot(2, 2, 2);
+scatter(vec2, vec3);
+title("vec2 - vec3", "FontSize", 16);
+xlabel("vec2", "FontSize", 13);
+ylabel("vec3", "FontSize", 13);
+grid on;
+
+subplot(2, 2, 3);
+scatter(vec1, vec3);
+title("vec1 - vec3", "FontSize", 16);
+xlabel("vec1", "FontSize", 13);
+ylabel("vec3", "FontSize", 13);
+grid on;
+
+subplot(2, 2, 4);
+scatter(vec1, vec1);
+title("vec1 - vec1", "FontSize", 16);
+xlabel("vec1", "FontSize", 13);
+ylabel("vec1", "FontSize", 13);
+grid on;
+\end{matlabcode}
+\begin{center}
+\includegraphics[width=\maxwidth{56.196688409433015em}]{figure_0.eps}
+\end{center}
+\begin{matlabcode}
+figure;
+\end{matlabcode}
+
+\end{document}
